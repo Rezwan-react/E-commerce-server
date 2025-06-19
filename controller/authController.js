@@ -1,5 +1,120 @@
-const registration = (req, res) => {
-    res.send('registration');
+const sendMail = require("../helpers/mail");
+const { emailVerifyTemplates } = require("../helpers/templates");
+const { emailValidator } = require("../helpers/validators");
+const userSchema = require("../modal/userSchema");
+
+// ================= Registration Controller 
+const registration = async (req, res) => {
+    const { name, email, password, address, phone, role, avatar } = req.body;
+
+    try {
+        //=========== Validate input
+        if (!name) return res.status(400).send({ error: "Name is required!" });
+        if (!email) return res.status(400).send({ error: "Email is required!" });
+        if (!password) return res.status(400).send({ error: "Password is required!" });
+        if (!address) return res.status(400).send({ error: "Address is required!" });
+        if (!phone) return res.status(400).send({ error: "Phone number is required!" });
+        if (emailValidator(email)) return res.status(400).send({ error: "Email is not valid" });
+        // =========== existing user check
+        const existingUser = await userSchema.findOne({ email });
+        if (existingUser) return res.status(400).send({ error: "Email already exist" });
+
+        // =========== random otp generate
+        const randomOtp = Math.floor(Math.random() * 9000);
+
+        // =========== create user
+        const user = new userSchema({
+            name,
+            email,
+            password,
+            address,
+            phone,
+            role,
+            avatar,
+            otp: randomOtp,
+            otpExpiredAt: new Date(Date.now() + 5 * 60 * 1000)
+        });
+
+        user.save()
+        // ========== email verification
+        sendMail(email, "Verify your email", emailVerifyTemplates, randomOtp);
+
+        res.status(201).send({ success: "Registration successful. Please verify your email." });
+    } catch (error) {
+        res.status(500).send({ error: "server error" });
+    }
 }
 
-module.exports = { registration }
+// ================ Verify Email Controller
+const verifyEmailAddress = async (req, res) => {
+    const { email, otp } = req.body;
+
+    try {
+        if (!email) return res.status(400).send({ error: "Invalid  email" });
+        if (!otp) return res.status(400).send({ error: "Invalid otp" });
+
+        const verifiedUser = await userSchema.findOne({
+            email,
+            otp,
+            otpExpiredAt: { $gt: Date.now() },
+        });
+        if (!verifiedUser) return res.status(400).send({ error: "Invalid otp" });
+
+        verifiedUser.otp = null;
+        verifiedUser.otpExpiredAt = null;
+        verifiedUser.isVarified = true;
+        verifiedUser.save();
+
+        res.status(200).send({ success: "email verified successfully" });
+    } catch (error) {
+        res.status(500).send({ error: "server error" });
+    }
+};
+
+// ================ Login Controller
+const login = async (req, res) => {
+    const { email, password } = req.body;
+
+    try {
+        if (!email) return res.status(400).send({ error: "email is required" });
+        if (emailValidator(email)) res.status(400).send({ error: "email is not valid" });
+        if (!password) return res.status(400).send({ error: "password is required" });
+
+        const existingUser = await userSchema.findOne({ email });
+        if (!existingUser) return res.status(400).send({ error: "user not found" });
+        const passCheck = await existingUser.isPasswordValid(password);
+        if (!passCheck) return res.status(400).send({ error: "wrong password" });
+        if (!existingUser.isVarified)
+            return res.status(400).send({ error: "email is not varified" });
+
+        // ========================= jwt token part start
+        const accessToken = jwt.sign(
+            {
+                data: {
+                    email: existingUser.email,
+                    id: existingUser._id,
+                },
+            },
+            process.env.JWT_SEC,
+            { expiresIn: "24h" }
+        );
+
+        const loggedUse = {
+            email: existingUser.email,
+            _id: existingUser._id,
+            fullName: existingUser.fullName,
+            avatar: existingUser.avatar,
+            isVarified: existingUser.isVarified,
+            createdAt: existingUser.createdAt,
+            updatedAt: existingUser.updatedAt,
+        };
+
+        res
+            .status(200)
+            .send({ success: "login Sussessfull", user: loggedUse, accessToken });
+    } catch (error) {
+        res.status(500).send({ error: "server error" });
+    }
+};
+
+module.exports = { registration, verifyEmailAddress, login }

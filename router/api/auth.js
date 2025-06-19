@@ -1,8 +1,10 @@
 const express = require('express');
-const { registration } = require('../../controller/authController');
+const { registration, login, verifyEmailAddress } = require('../../controller/authController');
 const router = express.Router();
 
-router.get("/registration", registration);
+router.post("/registration", registration);
+router.post("/verifyEmailAddress", verifyEmailAddress);
+router.post("/login", login);
 
 
 

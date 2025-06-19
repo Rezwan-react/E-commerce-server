@@ -1,6 +1,6 @@
-const e = require('express');
 const mongoose = require('mongoose');
 const Schema = mongoose.Schema;
+const bcrypt = require('bcrypt');
 
 const userSchema = new Schema({
     name: {
@@ -54,5 +54,17 @@ const userSchema = new Schema({
         timestamps: true,
     }
 );
+
+// =========== Password Hashing
+userSchema.pre("save", async function (next) {
+    if (!this.isModified("password")) return next();
+    this.password = await bcrypt.hash(this.password, 10);
+    next();
+
+});
+// ============ password validation
+userSchema.methods.isPasswordValid = async function (password) {
+    return await bcrypt.compare(password, this.password);
+}
 
 module.exports = mongoose.model("User", userSchema);
