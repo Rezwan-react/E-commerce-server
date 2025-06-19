@@ -2,6 +2,7 @@ const sendMail = require("../helpers/mail");
 const { emailVerifyTemplates } = require("../helpers/templates");
 const { emailValidator } = require("../helpers/validators");
 const userSchema = require("../modal/userSchema");
+const jwt = require("jsonwebtoken");
 
 // ================= Registration Controller 
 const registration = async (req, res) => {
@@ -39,7 +40,7 @@ const registration = async (req, res) => {
         // ========== email verification
         sendMail(email, "Verify your email", emailVerifyTemplates, randomOtp);
 
-        res.status(201).send({ success: "Registration successful. Please verify your email." });
+        res.status(200).send({ success: "Registration successful. Please verify your email." });
     } catch (error) {
         res.status(500).send({ error: "server error" });
     }
@@ -84,8 +85,7 @@ const login = async (req, res) => {
         if (!existingUser) return res.status(400).send({ error: "user not found" });
         const passCheck = await existingUser.isPasswordValid(password);
         if (!passCheck) return res.status(400).send({ error: "wrong password" });
-        if (!existingUser.isVarified)
-            return res.status(400).send({ error: "email is not varified" });
+        if (!existingUser.isVarified) return res.status(400).send({ error: "email is not varified" });
 
         // ========================= jwt token part start
         const accessToken = jwt.sign(
@@ -95,23 +95,23 @@ const login = async (req, res) => {
                     id: existingUser._id,
                 },
             },
-            process.env.JWT_SEC,
-            { expiresIn: "24h" }
+            process.env.JWT_SEC, { expiresIn: "5d" }
         );
 
         const loggedUse = {
             email: existingUser.email,
             _id: existingUser._id,
-            fullName: existingUser.fullName,
+            name: existingUser.name,
             avatar: existingUser.avatar,
             isVarified: existingUser.isVarified,
+            phone: existingUser.phone,
+            address: existingUser.address,
+            role: existingUser.role,
             createdAt: existingUser.createdAt,
             updatedAt: existingUser.updatedAt,
         };
 
-        res
-            .status(200)
-            .send({ success: "login Sussessfull", user: loggedUse, accessToken });
+        res.status(200).send({ success: "login Sussessfull", user: loggedUse, accessToken });
     } catch (error) {
         res.status(500).send({ error: "server error" });
     }

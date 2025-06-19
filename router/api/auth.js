@@ -3,7 +3,7 @@ const { registration, login, verifyEmailAddress } = require('../../controller/au
 const router = express.Router();
 
 router.post("/registration", registration);
-router.post("/verifyEmailAddress", verifyEmailAddress);
+router.post("/verifyEmail", verifyEmailAddress);
 router.post("/login", login);
 
 
