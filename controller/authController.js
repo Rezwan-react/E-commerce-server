@@ -1,3 +1,4 @@
+const cloudinary = require("../helpers/cloudinary");
 const generateRandomString = require("../helpers/generateRandomString");
 const sendMail = require("../helpers/mail");
 const { emailVerifyTemplates, resetPasswordTemplates } = require("../helpers/templates");
@@ -14,7 +15,6 @@ const registration = async (req, res) => {
         if (!name) return res.status(400).send({ error: "Name is required!" });
         if (!email) return res.status(400).send({ error: "Email is required!" });
         if (!password) return res.status(400).send({ error: "Password is required!" });
-        if (!address) return res.status(400).send({ error: "Address is required!" });
         if (!phone) return res.status(400).send({ error: "Phone number is required!" });
         if (emailValidator(email)) return res.status(400).send({ error: "Email is not valid" });
         // =========== existing user check
@@ -94,6 +94,7 @@ const login = async (req, res) => {
                 data: {
                     email: existingUser.email,
                     id: existingUser._id,
+                    role: existingUser.role,
                 },
             },
             process.env.JWT_SEC, { expiresIn: "5d" }
@@ -163,4 +164,28 @@ const resetPassword = async (req, res) => {
     }
 };
 
-module.exports = { registration, verifyEmailAddress, login, forgatPassword, resetPassword }
+// ================ Update User Controller
+const update = async (req, res) => {
+    const { fullName, password } = req.body;
+    try {
+        const existingUser = await userSchema.findById(req.user.id);
+
+        if (fullName) existingUser.fullName = fullName.trim().split(/\s+/).join(' ');
+        if (password) existingUser.password = password;
+
+        if (req?.file?.path) {
+            if (existingUser.avatar) await cloudinary.uploader.destroy(existingUser.avatar.split('/').pop().split('.')[0]);
+            const result = await cloudinary.uploader.upload(req.file.path)
+            existingUser.avatar = result.url;
+            fs.unlinkSync(req.file.path);
+        }
+
+        existingUser.save();
+
+        res.status(200).send(existingUser);
+    } catch (error) {
+        res.status(500).send({ error: "server error" });
+    }
+};
+
+module.exports = { registration, verifyEmailAddress, login, forgatPassword, resetPassword, update }
