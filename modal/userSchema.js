@@ -43,10 +43,10 @@ const userSchema = new Schema({
         type: Boolean,
         default: false,
     },
-    resetPassId: {
+    resetPasswordId: {
         type: String
     },
-    resetPassExpiredAt: {
+    resetPasswordExpiredAt: {
         type: Date,
     },
 },

@@ -1,5 +1,6 @@
+const generateRandomString = require("../helpers/generateRandomString");
 const sendMail = require("../helpers/mail");
-const { emailVerifyTemplates } = require("../helpers/templates");
+const { emailVerifyTemplates, resetPasswordTemplates } = require("../helpers/templates");
 const { emailValidator } = require("../helpers/validators");
 const userSchema = require("../modal/userSchema");
 const jwt = require("jsonwebtoken");
@@ -117,4 +118,49 @@ const login = async (req, res) => {
     }
 };
 
-module.exports = { registration, verifyEmailAddress, login }
+// ================ Forgat Password Controller
+const forgatPassword = async (req, res) => {
+    const { email } = req.body;
+
+    try {
+        if (!email) return res.status(400).send({ error: "email is required" });
+
+        const existingUser = await userSchema.findOne({ email });
+        if (!existingUser) return res.status(400).send({ error: "user not found" });
+        // ============== generate random string for reset password
+        const randomString = generateRandomString(30);
+
+        existingUser.resetPasswordId = randomString;
+        existingUser.resetPasswordExpiredAt = new Date(Date.now() + 10 * 60 * 1000);
+        existingUser.save();
+
+        sendMail(email, "Reset password", resetPasswordTemplates, randomString);
+
+        res.status(201).send({ success: "check email" });
+    } catch (error) {
+        res.status(500).send({ error: "server error" });
+    }
+};
+
+// ================ Reset Password Controller
+const resetPassword = async (req, res) => {
+    const { newPassword } = req.body;
+    try {
+        const randomString = req.params.randomstring;
+        const email = req.query.email;
+
+        const existingUser = await userSchema.findOne({ email, resetPasswordId: randomString, resetPasswordExpiredAt: { $gt: Date.now() }, });
+        if (!existingUser) return res.status(400).send({ error: "Invalid request" });
+        if (!newPassword) return res.status(400).send({ error: "input your new password" });
+        existingUser.password = newPassword;
+        existingUser.resetPasswordId = null;
+        existingUser.resetPasswordExpiredAt = null;
+        existingUser.save();
+
+        res.status(200).send({ success: "reset password successfully" });
+    } catch (error) {
+        res.status(500).send({ error: "server error" });
+    }
+};
+
+module.exports = { registration, verifyEmailAddress, login, forgatPassword, resetPassword }
