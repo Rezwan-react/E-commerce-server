@@ -8,10 +8,10 @@ app.use(cors());
 require('dotenv').config();
 app.use(router)
 
-// Database connection
+//========== Database connection
 dbConnect();
 
-// Create server
+//========== Create server
 app.listen(8000, () => {
     console.log("Server is running")
 })
