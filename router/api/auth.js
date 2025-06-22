@@ -5,6 +5,7 @@ const upload = require('../../helpers/multer');
 const roleCheck = require('../../middlewares/roleMiddleware');
 const router = express.Router();
 
+// ======== Auth Routes 
 router.post("/registration", registration);
 router.post("/verifyEmail", verifyEmailAddress);
 router.post("/login", login);
