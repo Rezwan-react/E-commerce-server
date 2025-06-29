@@ -7,12 +7,12 @@ const createCategory = async (req, res) => {
     const { categoryName } = req.body;
 
     //  ======== Validation 
-    if (!categoryName) return res.status(400).send({ error: 'Category name is required' });
-    if (!req?.file?.path) return res.status(400).send({ error: 'Category image is required' });
+    if (!categoryName) return res.status(400).send({ message: 'Category name is required' });
+    if (!req?.file?.path) return res.status(400).send({ message: 'Category image is required' });
 
     // =========== existing category check
-    const existingCategory = await categorySchema.findOne({ categoryName });
-    if (existingCategory) return res.status(400).send({ error: "Category already exists" });
+    const existingCategory = await categorySchema.findOne({ categoryName: { $regex: `${categoryName}`, $options: 'i' } });
+    if (existingCategory) return res.status(400).send({ message: "Category already exists" });
 
     // =========== upload image to cloudinary
     const result = await cloudinary.uploader.upload(req.file.path, { folder: "categories" })
@@ -33,7 +33,7 @@ const createCategory = async (req, res) => {
 const gatCategory = async (req, res) => {
     const cateagors = await categorySchema.find()
 
-    res.status(200).send({ success: "Category fetched successfully", cateagors });
+    res.status(200).send({ message: "Category fetched successfully", cateagors });
 }
 
 module.exports = { createCategory, gatCategory };
