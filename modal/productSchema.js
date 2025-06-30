@@ -1,5 +1,4 @@
 const mongoose = require('mongoose');
-const { image } = require('../helpers/cloudinary');
 const Schema = mongoose.Schema;
 
 const productSchema = new Schema({
