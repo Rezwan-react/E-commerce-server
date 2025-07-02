@@ -30,7 +30,7 @@ const productSchema = new Schema({
         ref: 'Category',
         required: true
     },
-    rstatus: {
+    status: {
         type: String,
         enum: ["active", "pending", "reject"],
         default: 'pending'
@@ -38,7 +38,8 @@ const productSchema = new Schema({
     variants: [{
         name: {
             type: String,
-            enum: ["color", "size"]
+            enum: ["color", "size"],
+            lowercase: true,
         },
         options: [{
             colorname: {
