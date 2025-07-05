@@ -11,6 +11,6 @@ router.post("/createcategory", authMiddleware, roleCheck(["admin"]), upload.sing
 router.get("/categories", gatCategory);
 
 // ========== Product Routes
-router.post("/creat", createProduct),
+router.post("/creat", upload.fields([{ name: "mainImg", maxCount: 1 }, { name: "images", maxCount: 8 },]), createProduct);
 
 module.exports = router;

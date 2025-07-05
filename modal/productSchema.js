@@ -44,11 +44,9 @@ const productSchema = new Schema({
         options: [{
             colorname: {
                 type: String,
-                required: true
             },
             size: {
                 type: String,
-                required: true
             },
             additionalPrice: {
                 type: Number,

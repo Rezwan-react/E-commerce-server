@@ -1,22 +1,42 @@
 const productSchema = require("../modal/productSchema");
+const cloudinary = require("../helpers/cloudinary");
+const fs = require("fs");
 
+// ========== Create Product
 const createProduct = async (req, res) => {
-    const { title, description, price, stock, category, status, variants } = req.body;
+    const { title, description, price, stock, category, variants } = req.body;
 
+    
+    let mainImg = [];
+    if (req.files.mainImg && Array.isArray(req.files.mainImg)) {
+        mainImg = await Promise.all(
+            req.files.mainImg.map(async (item) => {
+                const uploadResult = await cloudinary.uploader.upload(item.path, {
+                    folder: "products",
+                });
+                fs.unlinkSync(item.path);
+                return uploadResult;
+            })
+        );
+    }
+    
+    console.log(req.files); return
     // ======== Validation
     if (!title) return res.status(400).send({ message: "Title is required" });
     if (!description) return res.status(400).send({ message: "Description is required" });
     if (!price) return res.status(400).send({ message: "Price is required" });
     if (!stock) return res.status(400).send({ message: "Stock is required" });
     if (!category) return res.status(400).send({ message: "Category is required" });
-    // if (!status) return res.status(400).send({ message: "Status is required" });
-    if (!variants) return res.status(400).send({ message: "Variants are required" });
+    if (variants.length < 1) return res.status(400).send({ message: "Add minimum one variant" });
+    if (!req.files.mainImg) return res.status(400).send({ message: "Main image is required" });
 
-    // ========== Image Validation
+
+
+    // ========== Variant Validation
     variants.forEach(items => {
-        // ========== Variant Name Validation
+        // ========== Variant enum Validation
         if (!["color", "size"].includes(items.name)) {
-            return res.status(400).send({ message: "Invalid variant name" });
+            return res.status(400).send({ message: "Invalid variant enum" });
         }
         // ========== Variant Color Validation
         if (items.name === "color") {
@@ -36,18 +56,14 @@ const createProduct = async (req, res) => {
         }
     });
 
-    console.log(variants);
-    res.send(variants);
-    return;
-
     const product = new productSchema({
         title,
         description,
         price,
         stock,
         category,
-        rstatus,
-        variants
+        variants,
+        mainImg,
     });
 
     product.save();
