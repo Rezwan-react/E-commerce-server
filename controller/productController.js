@@ -6,20 +6,16 @@ const fs = require("fs");
 const createProduct = async (req, res) => {
     const { title, description, price, stock, category, variants } = req.body;
 
-    
-    let mainImg = [];
-    if (req.files.mainImg && Array.isArray(req.files.mainImg)) {
-        mainImg = await Promise.all(
-            req.files.mainImg.map(async (item) => {
-                const uploadResult = await cloudinary.uploader.upload(item.path, {
-                    folder: "products",
-                });
-                fs.unlinkSync(item.path);
-                return uploadResult;
-            })
-        );
+    // ========= Main Image Upload
+    let mainImg;
+    for (item of req.files.mainImg) {
+        const result = await cloudinary.uploader.upload(item.path, {
+            folder: "products",
+        });
+        fs.unlinkSync(item.path);
+        mainImg = result.url;
     }
-    
+
     console.log(req.files); return
     // ======== Validation
     if (!title) return res.status(400).send({ message: "Title is required" });
