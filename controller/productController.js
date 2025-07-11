@@ -6,17 +6,6 @@ const fs = require("fs");
 const createProduct = async (req, res) => {
     const { title, description, price, stock, category, variants } = req.body;
 
-    // ========= Main Image Upload
-    let mainImg;
-    for (item of req.files.mainImg) {
-        const result = await cloudinary.uploader.upload(item.path, {
-            folder: "products",
-        });
-        fs.unlinkSync(item.path);
-        mainImg = result.url;
-    }
-
-    console.log(req.files); return
     // ======== Validation
     if (!title) return res.status(400).send({ message: "Title is required" });
     if (!description) return res.status(400).send({ message: "Description is required" });
@@ -25,8 +14,6 @@ const createProduct = async (req, res) => {
     if (!category) return res.status(400).send({ message: "Category is required" });
     if (variants.length < 1) return res.status(400).send({ message: "Add minimum one variant" });
     if (!req.files.mainImg) return res.status(400).send({ message: "Main image is required" });
-
-
 
     // ========== Variant Validation
     variants.forEach(items => {
@@ -52,6 +39,28 @@ const createProduct = async (req, res) => {
         }
     });
 
+    // ========= Main Image Upload
+    let mainImg;
+    for (item of req.files.mainImg) {
+        const result = await cloudinary.uploader.upload(item.path, {
+            folder: "products",
+        });
+        fs.unlinkSync(item.path);
+        mainImg = result.url;
+    }
+    // ========= sub Images Upload
+    let productImages = [];
+    if (req.files.images.length > 0) {
+        for (item of req.files.images) {
+            const result = await cloudinary.uploader.upload(item.path, {
+                folder: "products",
+            });
+            fs.unlinkSync(item.path);
+            productImages.push(result.url);
+        }
+    }
+
+    // ========= Create Product
     const product = new productSchema({
         title,
         description,
@@ -60,6 +69,7 @@ const createProduct = async (req, res) => {
         category,
         variants,
         mainImg,
+        images: productImages,
     });
 
     product.save();
