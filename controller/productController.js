@@ -134,4 +134,9 @@ const updateProduct = async (req, res) => {
 
 };
 
-module.exports = { createProduct, updateProduct }
+// ========== Get All Products 
+const getAllProducts = async (req, res) => {
+    
+}
+
+module.exports = { createProduct, updateProduct, getAllProducts }
