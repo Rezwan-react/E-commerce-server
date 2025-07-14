@@ -2,6 +2,7 @@ const productSchema = require("../modal/productSchema");
 const cloudinary = require("../helpers/cloudinary");
 const generateSlug = require("../helpers/slugGerarator");
 const fs = require("fs");
+const { buildSearchQuery } = require("../helpers/buildSearchQuery");
 
 // ========== Create Product
 const createProduct = async (req, res) => {
@@ -93,50 +94,81 @@ const createProduct = async (req, res) => {
 const updateProduct = async (req, res) => {
     const { title, description, price, stock, category, variants } = req.body;
 
-    // ========= slug 
-    const { slug } = req.params;
-    const existingProduct = await productSchema.findOne({ slug });
-    if (!existingProduct) return res.status(400).send({ message: "Invalid request, product not found" });
+    try {
+        // ========= slug 
+        const { slug } = req.params;
+        const existingProduct = await productSchema.findOne({ slug });
+        if (!existingProduct) return res.status(400).send({ message: "Invalid request, product not found" });
 
-    // ========= Update product fields if provided in the request body
-    if (title) existingProduct.title = title;
-    if (description) existingProduct.description = description;
-    if (price) existingProduct.price = price;
-    if (stock) existingProduct.stock = stock;
-    if (category) existingProduct.category = category;
-    if (variants && variants.length > 0) existingProduct.variants = variants;
-    if (req?.files?.mainImg?.length > 0) {
-        let mainImg;
-        for (item of req.files.mainImg) {
-            //============ delete existing main Image
-            await cloudinary.uploader.destroy(existingProduct.mainImg.split("/").pop().split(".")[0]);
-            const result = await cloudinary.uploader.upload(item.path, { folder: "products" });
-            fs.unlinkSync(item.path);
-            mainImg = result.url;
+        // ========= Update product fields if provided in the request body
+        if (title) existingProduct.title = title;
+        if (description) existingProduct.description = description;
+        if (price) existingProduct.price = price;
+        if (stock) existingProduct.stock = stock;
+        if (category) existingProduct.category = category;
+        if (variants && variants.length > 0) existingProduct.variants = variants;
+        if (req?.files?.mainImg?.length > 0) {
+            let mainImg;
+            for (item of req.files.mainImg) {
+                //============ delete existing main Image
+                await cloudinary.uploader.destroy(existingProduct.mainImg.split("/").pop().split(".")[0]);
+                const result = await cloudinary.uploader.upload(item.path, { folder: "products" });
+                fs.unlinkSync(item.path);
+                mainImg = result.url;
+            }
+            existingProduct.mainImg = mainImg;
         }
-        existingProduct.mainImg = mainImg;
+
+        // if (req?.files?.images?.length > 0) {
+        //     let productImages = [];
+        //     for (item of req.files.images) {
+        //         //============ delete existing sub Images
+        //         await cloudinary.uploader.destroy(item.filename);
+        //         const result = await cloudinary.uploader.upload(item.path, { folder: "products" });
+        //         fs.unlinkSync(item.path);
+        //         productImages.push(result.url);
+        //     }
+        //     existingProduct.images = productImages;
+        // }
+
+        existingProduct.save();
+        res.status(200).send({ message: "Product updated successfully", product: existingProduct });
+    } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
     }
-
-    // if (req?.files?.images?.length > 0) {
-    //     let productImages = [];
-    //     for (item of req.files.images) {
-    //         //============ delete existing sub Images
-    //         await cloudinary.uploader.destroy(item.filename);
-    //         const result = await cloudinary.uploader.upload(item.path, { folder: "products" });
-    //         fs.unlinkSync(item.path);
-    //         productImages.push(result.url);
-    //     }
-    //     existingProduct.images = productImages;
-    // }
-
-    existingProduct.save();
-    res.status(200).send({ message: "Product updated successfully", product: existingProduct });
 
 };
 
 // ========== Get All Products 
 const getAllProducts = async (req, res) => {
-    
+    // ========= Search and Pagination
+    const search = req.query.search || "";
+    const page = parseInt(req.query.page) || 1;
+    const limit = parseInt(req.query.limit) || 10;
+
+    // ========= Build Search Query
+    const totalProducts = await productSchema.countDocuments();
+    const totalPages = Math.ceil(totalProducts / limit);
+    const skip = (page - 1) * limit;
+    // ========= Function to build search query
+    const query = buildSearchQuery(search);
+    const products = await productSchema.find(query).skip(skip).limit(limit);
+
+    // ============= pagination response
+    const hasPrevPage = page > 1;
+    const hasNextPage = page < totalPages;
+
+    res.status(200).send({
+        products,
+        totalProducts,
+        limit,
+        page,
+        totalPages,
+        hasPrevPage,
+        hasNextPage,
+        prevPage: hasPrevPage ? page - 1 : null,
+        nextPage: hasNextPage ? page + 1 : null,
+    });
 }
 
 module.exports = { createProduct, updateProduct, getAllProducts }

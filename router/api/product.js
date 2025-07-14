@@ -14,7 +14,8 @@ router.get("/categories", gatCategory);
 router.post("/create", upload.fields([{ name: "mainImg", maxCount: 1 }, { name: "images", maxCount: 8 },]), createProduct);
 // ========== update Product Routes
 router.post("/update/:slug", upload.fields([{ name: "mainImg", maxCount: 1 }, { name: "images", maxCount: 8 },]), updateProduct);
-// ============ products list
+
+// ============ products list public routes
 router.get("/productslist", getAllProducts);
 
 module.exports = router;
