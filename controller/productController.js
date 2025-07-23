@@ -2,7 +2,9 @@ const productSchema = require("../modal/productSchema");
 const cloudinary = require("../helpers/cloudinary");
 const generateSlug = require("../helpers/slugGerarator");
 const fs = require("fs");
-const { buildSearchQuery } = require("../helpers/buildSearchQuery");
+const { title } = require("process");
+const SearchRegx = require("../helpers/searchRegx");
+const categorySchema = require("../modal/categorySchema");
 
 // ========== Create Product
 const createProduct = async (req, res) => {
@@ -141,34 +143,52 @@ const updateProduct = async (req, res) => {
 
 // ========== Get All Products 
 const getAllProducts = async (req, res) => {
-    // ========= Search and Pagination
-    const search = req.query.search || "";
-    const page = parseInt(req.query.page) || 1;
-    const limit = parseInt(req.query.limit) || 10;
+    try {
+        // ========= Search and Pagination
+        const search = req.query.search || "";
+        const status = req.query.status || "";
+        const categoryName = req.query.category || "";
+        const page = parseInt(req.query.page) || 1;
+        const limit = parseInt(req.query.limit) || 10;
 
-    // ========= Build Search Query
-    const totalProducts = await productSchema.countDocuments();
-    const totalPages = Math.ceil(totalProducts / limit);
-    const skip = (page - 1) * limit;
-    // ========= Function to build search query
-    const query = buildSearchQuery(search);
-    const products = await productSchema.find(query).skip(skip).limit(limit);
+        // ========= Build Search Query
+        const totalProducts = await productSchema.countDocuments();
+        const totalPages = Math.ceil(totalProducts / limit);
+        const skip = (page - 1) * limit;
+        // ========= Function to build search query
+        const query = {};
+        if (search) {
+            query.title = { $regex: SearchRegx(search), $options: "i" };
+        }
+        if (status) {
+            query.status = status;
+        }
+        if (categoryName) {
+            const categoryData = await categorySchema.findOne({ name: { $regex: SearchRegx(categoryName), $options: "i" } });
+            if (categoryData) query.category = categoryData._id;
+        }
 
-    // ============= pagination response
-    const hasPrevPage = page > 1;
-    const hasNextPage = page < totalPages;
 
-    res.status(200).send({
-        products,
-        totalProducts,
-        limit,
-        page,
-        totalPages,
-        hasPrevPage,
-        hasNextPage,
-        prevPage: hasPrevPage ? page - 1 : null,
-        nextPage: hasNextPage ? page + 1 : null,
-    });
+        const products = await productSchema.find(query).skip(skip).limit(limit).populate("category");
+
+        // ============= pagination response
+        const hasPrevPage = page > 1;
+        const hasNextPage = page < totalPages;
+
+        res.status(200).send({
+            products,
+            totalProducts,
+            limit,
+            page,
+            totalPages,
+            hasPrevPage,
+            hasNextPage,
+            prevPage: hasPrevPage ? page - 1 : null,
+            nextPage: hasNextPage ? page + 1 : null,
+        });
+    } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
+    }
 }
 
 module.exports = { createProduct, updateProduct, getAllProducts }
