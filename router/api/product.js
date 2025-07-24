@@ -3,7 +3,7 @@ const { createCategory, gatCategory } = require('../../controller/categoryContro
 const upload = require('../../helpers/multer');
 const roleCheck = require('../../middlewares/roleMiddleware');
 const authMiddleware = require('../../middlewares/authMiddleware');
-const { createProduct, updateProduct, getAllProducts } = require('../../controller/productController');
+const { createProduct, updateProduct, getAllProducts, deleteProduct } = require('../../controller/productController');
 const router = express.Router();
 
 // ========== Category Routes 
@@ -17,5 +17,7 @@ router.post("/update/:slug", upload.fields([{ name: "mainImg", maxCount: 1 }, { 
 
 // ============ products list public routes
 router.get("/productslist", getAllProducts);
+// =========== delete product routes
+router.delete("/deleteProduct/:productID", authMiddleware, roleCheck(["admin"]), deleteProduct);
 
 module.exports = router;
