@@ -94,7 +94,7 @@ const createProduct = async (req, res) => {
 
 // ============== update Product
 const updateProduct = async (req, res) => {
-    const { title, description, price, stock, category, variants } = req.body;
+    const { title, description, price, stock, category, variants, status } = req.body;
 
     try {
         // ========= slug 
@@ -109,6 +109,11 @@ const updateProduct = async (req, res) => {
         if (stock) existingProduct.stock = stock;
         if (category) existingProduct.category = category;
         if (variants && variants.length > 0) existingProduct.variants = variants;
+        if (status && ["active", "pending", "reject"].includes(status.toLowerCase())) {
+            if (req.user.role === "admin") {
+                existingProduct.status = status;
+            }
+        }
         if (req?.files?.mainImg?.length > 0) {
             let mainImg;
             for (item of req.files.mainImg) {
@@ -190,5 +195,7 @@ const getAllProducts = async (req, res) => {
         res.status(500).send({ message: "Internal server error" });
     }
 }
+
+// ============= 
 
 module.exports = { createProduct, updateProduct, getAllProducts }
