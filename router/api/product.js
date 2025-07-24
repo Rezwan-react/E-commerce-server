@@ -4,6 +4,7 @@ const upload = require('../../helpers/multer');
 const roleCheck = require('../../middlewares/roleMiddleware');
 const authMiddleware = require('../../middlewares/authMiddleware');
 const { createProduct, updateProduct, getAllProducts, deleteProduct } = require('../../controller/productController');
+const { addToCart } = require('../../controller/cartController');
 const router = express.Router();
 
 // ========== Category Routes 
@@ -19,5 +20,8 @@ router.post("/update/:slug", upload.fields([{ name: "mainImg", maxCount: 1 }, { 
 router.get("/productslist", getAllProducts);
 // =========== delete product routes
 router.delete("/deleteProduct/:productID", authMiddleware, roleCheck(["admin"]), deleteProduct);
+
+// ========== cart routes
+router.post("/addtocart", authMiddleware, addToCart);
 
 module.exports = router;
