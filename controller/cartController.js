@@ -90,4 +90,20 @@ const deleteCart = async (req, res) => {
     }
 }
 
-module.exports = { addToCart, updateCart, deleteCart };
+// ========== get cart controller
+const getCart = async (req, res) => {
+    try {
+        const userId = req.user.id;
+
+        let cart = await cartSchema.findOne({ user: userId }).populate("items.product");
+        if (!cart) {
+            return res.status(404).send({ message: "Cart not found" });
+        }
+
+        res.status(200).send({ message: "Cart retrieved successfully", cart });
+    } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
+    }
+}
+
+module.exports = { addToCart, updateCart, deleteCart, getCart };
