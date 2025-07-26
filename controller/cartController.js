@@ -39,10 +39,55 @@ const updateCart = async (req, res) => {
     const userId = req.user.id;
     const { productId, quantity } = req.body;
 
-    if (!productId) return res.status(400).send({ message: "Product ID required" });
-    if (!quantity || quantity < 1) return res.status(400).send({ message: "Quantity must be greater than 0" });
+    try {
+        if (!productId) return res.status(400).send({ message: "Product ID required" });
+        if (!quantity || quantity < 1) return res.status(400).send({ message: "Quantity must be greater than 0" });
 
+        let cart = await cartSchema.findOne({ user: userId });
+        if (!cart) {
+            return res.status(404).send({ message: "Cart not found" });
+        }
 
+        const index = cart.items.findIndex(item => item.product.toString() === productId);
+        if (index === -1) {
+            return res.status(404).send({ message: "Product not found in cart" });
+        }
+
+        cart.items[index].quantity = quantity;
+
+        await cart.save();
+
+        res.status(200).send({ message: "Cart updated successfully", cart });
+    } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
+    }
 }
 
-module.exports = { addToCart, updateCart };
+// =========== delete cart controller
+const deleteCart = async (req, res) => {
+    try {
+        const userId = req.user.id;
+        const productId = req.params.productId;
+
+        let cart = await cartSchema.findOne({ user: userId });
+        if (!cart) {
+            return res.status(404).send({ message: "Cart not found" });
+        }
+
+        const initialLength = cart.items.length;
+        cart.items = cart.items.filter(
+            (item) => item.product.toString() !== productId
+        );
+        if (cart.items.length === initialLength) {
+            return res.status(404).send({ message: "Product not found in cart" });
+        }
+
+        await cart.save();
+
+        res.status(200).send({ message: "Product removed from cart", cart });
+    } catch (error) {
+        res.status(500).send({ message: "Internal server error" });
+    }
+}
+
+module.exports = { addToCart, updateCart, deleteCart };
