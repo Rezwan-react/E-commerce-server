@@ -25,7 +25,7 @@ const createCategory = async (req, res) => {
     })
     cateagor.save()
 
-    res.status(201).send({ success: "Category created successfully", cateagor });
+    res.status(201).send({ message: "Category created successfully", cateagor });
 
 }
 
