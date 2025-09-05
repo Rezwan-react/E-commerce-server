@@ -6,7 +6,9 @@ const fs = require('fs');
 const createCategory = async (req, res) => {
     const { categoryName } = req.body;
 
-    //  ======== Validation 
+    console.log(categoryName);
+    console.log(req.file);
+    //  ======== Validation
     if (!categoryName) return res.status(400).send({ message: 'Category name is required' });
     if (!req?.file?.path) return res.status(400).send({ message: 'Category image is required' });
 
