@@ -8,9 +8,9 @@ const jwt = require("jsonwebtoken");
 
 // ================= Registration Controller 
 const registration = async (req, res) => {
-    const { name, email, password, address, phone, role, avatar } = req.body;
 
     try {
+        const { name, email, password, address, phone, role, avatar } = req.body;
         //=========== Validate input
         if (!name) return res.status(400).send({ error: "Name is required!" });
         if (!email) return res.status(400).send({ error: "Email is required!" });
@@ -49,9 +49,9 @@ const registration = async (req, res) => {
 
 // ================ Verify Email Controller
 const verifyEmailAddress = async (req, res) => {
-    const { email, otp } = req.body;
 
     try {
+        const { email, otp } = req.body;
         if (!email) return res.status(400).send({ error: "Invalid  email" });
         if (!otp) return res.status(400).send({ error: "Invalid otp" });
 
@@ -166,11 +166,11 @@ const resetPassword = async (req, res) => {
 
 // ================ Update User Controller
 const update = async (req, res) => {
-    const { fullName, password } = req.body;
+    const { name, password } = req.body;
     try {
         const existingUser = await userSchema.findById(req.user.id);
 
-        if (fullName) existingUser.fullName = fullName.trim().split(/\s+/).join(' ');
+        if (name) existingUser.name = name.trim().split(/\s+/).join(' ');
         if (password) existingUser.password = password;
 
         if (req?.file?.path) {
