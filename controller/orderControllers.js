@@ -58,5 +58,44 @@ const addNewOrder = async (req, res) => {
         res.status(500).send({ message: "Internal Server Error" });
     }
 }
+// =============== updateOrder controller
+const updateOrder = async (req, res) => {
+    try {
+        const { orderId } = req.params;
+        const { status } = req.body;
 
-module.exports = { addNewOrder };
+        let updateFields = {};
+
+        // Validate status if present
+        const allowedStatuses = [
+            "pending",
+            "processing",
+            "shipped",
+            "delivered",
+            "cancelled",
+        ];
+
+        if (status && !allowedStatuses.includes(status)) {
+            return res.status(400).json({ message: "Invalid status value" });
+        }
+        updateFields.status = status;
+
+        if (status === "delivered") {
+            updateFields.isDelivered = true;
+            updateFields.deliveredAt = new Date.now();
+        }
+        updateFields.updatedBy = req.user.id;
+
+        // Fetch order
+        const order = await orderSchema.findByIdAndUpdate(orderId, updateFields);
+        if (!order) {
+            return res.status(404).json({ message: "Order not found" });
+        }
+        res.status(200).json(order);
+    } catch (error) {
+        console.error("Error updating order:", error);
+        res.status(500).json({ message: "Server error" });
+    }
+};
+
+module.exports = { addNewOrder, updateOrder };

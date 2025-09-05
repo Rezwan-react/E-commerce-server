@@ -1,2 +1,4 @@
-# Node.js dependencies
-/node_modules
+# Node.js dependencies
+/node_modules
+config.bat
+.env
